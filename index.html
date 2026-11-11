@@ -29,7 +29,7 @@
 :root{
   --bg:#0f1419;--bar:#151c25;--text:#f3f6fa;--muted:#8b97a8;
   --btn:#243041;--accent:#7dd3fc;--line:#2d3a4a;
-  --bar-h:78px;
+  --bar-h:52px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -38,18 +38,15 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
 body{padding-top:env(safe-area-inset-top)}
 .bar{
   position:fixed;z-index:5;left:0;right:0;top:env(safe-area-inset-top);
-  height:var(--bar-h);display:flex;flex-wrap:wrap;align-content:center;gap:2px 0;
-  padding:4px 8px 5px;background:var(--bar);border-bottom:1px solid var(--line);
+  height:var(--bar-h);display:flex;align-items:center;gap:4px;
+  padding:0 8px;background:var(--bar);border-bottom:1px solid var(--line);
 }
-.tools{
-  display:flex;align-items:center;gap:4px;width:100%;min-width:0;
-}
-.tools .spacer{flex:1;min-width:0}
 #name{
-  display:block;width:100%;margin:0;padding:0 4px;
-  font-size:.68rem;font-weight:600;line-height:1.2;color:#8b97a8;
+  flex:0 1 auto;min-width:0;margin:0;padding:0 2px 0 4px;
+  font-size:.72rem;font-weight:600;color:#c5ced8;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+.bar .spacer{flex:1;min-width:16px}
 button,.filebtn{
   flex:none;white-space:nowrap;
   min-height:36px;padding:0 8px;border:0;border-radius:10px;
@@ -66,13 +63,9 @@ button:disabled:active{filter:none}
   position:fixed;left:-999px;width:1px;height:1px;opacity:0;
 }
 .icon{width:14px;height:14px;display:block;flex:none}
-#undoBtn,#clearBtn{
-  min-width:36px;padding:0 8px;background:transparent;color:#c5ced8;font-weight:600;
-}
-#clearBtn{color:#6b7787}
-#fsBtn,#exitFs{min-width:36px}
-@media (max-width:400px){
-  #fsBtn .label{display:none}
+#clearBtn{
+  min-width:36px;padding:0 8px;margin-right:4px;
+  background:transparent;color:#6b7787;font-weight:600;
 }
 .stage{position:fixed;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top) + var(--bar-h));background:#fff}
 iframe{width:100%;height:100%;border:0;background:#fff;display:block}
@@ -140,21 +133,14 @@ body.dragging .empty-hit{
 </head>
 <body>
 <header class="bar">
-  <div class="tools">
-    <button type="button" id="undoBtn" disabled>Undo</button>
-    <button type="button" id="clearBtn" aria-label="消す">消す</button>
-    <span class="spacer"></span>
-    <button type="button" id="paste">貼る</button>
-    <button type="button" class="ghost" id="srcBtn">ソース</button>
-    <button type="button" id="exportBtn" disabled aria-label="HTMLを書き出す">書き出し</button>
-    <button type="button" id="fsBtn" aria-label="全画面">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-      <span class="label">全画面</span>
-    </button>
-  </div>
   <b id="name">HTML Viewer</b>
+  <button type="button" id="clearBtn" aria-label="消す">消す</button>
+  <span class="spacer"></span>
+  <button type="button" id="paste">貼る</button>
+  <button type="button" id="srcBtn">ソース</button>
+  <button type="button" id="undoBtn" disabled>Undo</button>
+  <button type="button" id="exportBtn" disabled aria-label="HTMLを書き出す">書き出し</button>
 </header>
-<button type="button" id="exitFs">戻る</button>
 <input id="file" class="filepick" type="file" accept=".html,.htm,.txt,text/html,text/plain" tabindex="-1" aria-hidden="true">
 <div class="stage" id="stage">
   <iframe id="frame" title="view" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
@@ -440,8 +426,10 @@ body.dragging .empty-hit{
   document.getElementById('undoBtn').onclick=undo;
   document.getElementById('clearBtn').onclick=clearAll;
   document.getElementById('exportBtn').onclick=exportHtml;
-  document.getElementById('fsBtn').onclick=enterFS;
-  document.getElementById('exitFs').onclick=exitFS;
+  var fsBtn=document.getElementById('fsBtn');
+  if(fsBtn) fsBtn.onclick=enterFS;
+  var exitFsBtn=document.getElementById('exitFs');
+  if(exitFsBtn) exitFsBtn.onclick=exitFS;
   src.addEventListener('input', liveFromSource);
   src.addEventListener('change', liveFromSource);
   document.getElementById('srcBtn').onclick=function(){
