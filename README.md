@@ -38,3 +38,4 @@ Safariの共有ボタンから「ホーム画面に追加」。アイコンを�
 | `icon-192.png` / `icon-512.png` | Androidなどのアイコン |
 | `favicon-32.png` | タブのアイコン |
 | `og.png` | SNSのシェアカード |
+| `bird.png` | 画面中央の鳥 |
