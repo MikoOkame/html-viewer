@@ -348,7 +348,7 @@ body.dragging .empty-hit{
     fileName=snap.name||DEFAULT_NAME;
     paint(snap.text,fileName,true);
     updateUndo();
-    toast('戻しました');
+    toast('Undo');
   }
   function exportName(){
     var n=String(fileName||'').trim();
