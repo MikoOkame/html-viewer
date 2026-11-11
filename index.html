@@ -29,7 +29,7 @@
 :root{
   --bg:#0f1419;--bar:#151c25;--text:#f3f6fa;--muted:#8b97a8;
   --btn:#243041;--accent:#7dd3fc;--line:#2d3a4a;
-  --bar-h:52px;
+  --bar-h:78px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -38,12 +38,17 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
 body{padding-top:env(safe-area-inset-top)}
 .bar{
   position:fixed;z-index:5;left:0;right:0;top:env(safe-area-inset-top);
-  height:var(--bar-h);display:flex;align-items:center;gap:4px;
-  padding:0 8px;background:var(--bar);border-bottom:1px solid var(--line);
+  height:var(--bar-h);display:flex;flex-wrap:wrap;align-content:center;gap:2px 0;
+  padding:4px 8px 5px;background:var(--bar);border-bottom:1px solid var(--line);
 }
-.bar b{
-  font-size:.72rem;margin-right:auto;min-width:0;padding:0 4px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c5ced8;font-weight:600;
+.tools{
+  display:flex;align-items:center;gap:4px;width:100%;min-width:0;
+}
+.tools .spacer{flex:1;min-width:0}
+#name{
+  display:block;width:100%;margin:0;padding:0 4px;
+  font-size:.68rem;font-weight:600;line-height:1.2;color:#8b97a8;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 button,.filebtn{
   flex:none;white-space:nowrap;
@@ -55,10 +60,18 @@ button,.filebtn{
 button.primary,.filebtn.primary{background:var(--accent);color:#082f49}
 button.ghost{background:transparent;color:var(--muted)}
 button:active,.filebtn:active{filter:brightness(1.12)}
+button:disabled{opacity:.35}
+button:disabled:active{filter:none}
 .filebtn input{display:none}
 .icon{width:14px;height:14px;display:block;flex:none}
-#clearBtn{min-width:36px;padding:0 8px;background:transparent;color:#6b7787;font-weight:600}
-#fsBtn,#exitFs{min-width:72px}
+#undoBtn,#clearBtn{
+  min-width:36px;padding:0 8px;background:transparent;color:#c5ced8;font-weight:600;
+}
+#clearBtn{color:#6b7787}
+#fsBtn,#exitFs{min-width:36px}
+@media (max-width:400px){
+  #fsBtn .label{display:none}
+}
 .stage{position:fixed;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top) + var(--bar-h));background:#fff}
 iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 .empty{
@@ -126,15 +139,20 @@ body.dragging .empty-hit{
 </head>
 <body>
 <header class="bar">
-  <button type="button" id="clearBtn" aria-label="消す">消す</button>
+  <div class="tools">
+    <button type="button" id="undoBtn" disabled>Undo</button>
+    <button type="button" id="clearBtn" aria-label="消す">消す</button>
+    <span class="spacer"></span>
+    <button type="button" class="primary" id="paste">貼る</button>
+    <label class="filebtn"><input id="file" type="file" accept=".html,.htm,.txt,text/html,text/plain"><span>ファイル</span></label>
+    <button type="button" class="ghost" id="srcBtn">ソース</button>
+    <button type="button" id="exportBtn" disabled aria-label="HTMLを書き出す">書き出し</button>
+    <button type="button" id="fsBtn" aria-label="全画面">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      <span class="label">全画面</span>
+    </button>
+  </div>
   <b id="name">HTML Viewer</b>
-  <button type="button" class="primary" id="paste">貼る</button>
-  <label class="filebtn"><input id="file" type="file" accept=".html,.htm,.txt,text/html,text/plain"><span>ファイル</span></label>
-  <button type="button" class="ghost" id="srcBtn">ソース</button>
-  <button type="button" id="fsBtn" aria-label="全画面">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-    全画面
-  </button>
 </header>
 <button type="button" id="exitFs">戻る</button>
 <div class="stage" id="stage">
@@ -170,6 +188,11 @@ body.dragging .empty-hit{
   var fileName='HTML Viewer';
   var lastUrl='';
   var hasContent=false;
+  var history=[{text:'',name:fileName}];
+  var histAt=0;
+  var typedSinceSnap=false;
+  var typeTimer=null;
+  var DEFAULT_NAME='HTML Viewer';
   function toast(msg){
     toastEl.textContent=msg;
     toastEl.classList.add('on');
@@ -239,17 +262,69 @@ body.dragging .empty-hit{
     }
     revokeLater(prev);
   }
+  function currentSnap(){
+    return {text:src.value,name:fileName};
+  }
+  function sameSnap(a,b){
+    return !!a&&!!b&&a.text===b.text&&a.name===b.name;
+  }
+  function updateUndo(){
+    document.getElementById('undoBtn').disabled=histAt<=0;
+    document.getElementById('exportBtn').disabled=!hasContent;
+  }
+  function pushSnap(snap){
+    if(sameSnap(history[histAt],snap)) return;
+    history=history.slice(0,histAt+1);
+    history.push(snap);
+    if(history.length>40) history.shift();
+    histAt=history.length-1;
+    updateUndo();
+  }
+  function rememberCurrent(){
+    clearTimeout(typeTimer);
+    clearTimeout(liveTimer);
+    if(typedSinceSnap||!sameSnap(history[histAt],currentSnap())) pushSnap(currentSnap());
+    typedSinceSnap=false;
+  }
+  function noteTyping(){
+    typedSinceSnap=true;
+    clearTimeout(typeTimer);
+    typeTimer=setTimeout(function(){
+      typedSinceSnap=false;
+      typeTimer=null;
+      pushSnap(currentSnap());
+    },600);
+  }
+  function paint(text,label,keepSheet){
+    if(label){
+      fileName=label;
+      nameEl.textContent=fileName;
+    }
+    if(!text||!String(text).trim()){
+      src.value='';
+      fileName=DEFAULT_NAME;
+      nameEl.textContent=fileName;
+      hasContent=false;
+      newFrame();
+      revokeLater(lastUrl);
+      lastUrl='';
+      empty.style.display='flex';
+      if(!keepSheet) sheet.classList.remove('on');
+      exitFS();
+      updateUndo();
+      return;
+    }
+    src.value=text;
+    empty.style.display='none';
+    hasContent=true;
+    if(!keepSheet) sheet.classList.remove('on');
+    loadHtml(text);
+    updateUndo();
+  }
   function clearAll(){
-    src.value='';
-    fileName='HTML Viewer';
-    nameEl.textContent=fileName;
-    hasContent=false;
-    newFrame();
-    revokeLater(lastUrl);
-    lastUrl='';
-    empty.style.display='flex';
-    sheet.classList.remove('on');
-    exitFS();
+    rememberCurrent();
+    paint('','',false);
+    pushSnap(currentSnap());
     toast('空に戻しました');
   }
   function applyView(t, label, keepSheet){
@@ -257,19 +332,62 @@ body.dragging .empty-hit{
       if(!keepSheet) clearAll();
       return;
     }
-    empty.style.display='none';
-    hasContent=true;
-    if(label){
-      fileName=label;
-      nameEl.textContent=fileName;
-    }
-    if(!keepSheet) sheet.classList.remove('on');
-    loadHtml(t);
+    paint(t,label||fileName,keepSheet);
   }
   function show(text, label){
+    rememberCurrent();
     var t=text==null?src.value:text;
-    if(t!=null) src.value=t;
-    applyView(src.value, label||fileName||'貼り付け', false);
+    applyView(t, label||fileName||'貼り付け', false);
+    pushSnap(currentSnap());
+  }
+  function undo(){
+    rememberCurrent();
+    if(histAt<=0){
+      toast('戻せる状態がありません');
+      return;
+    }
+    histAt--;
+    var snap=history[histAt];
+    fileName=snap.name||DEFAULT_NAME;
+    paint(snap.text,fileName,true);
+    updateUndo();
+    toast('戻しました');
+  }
+  function exportName(){
+    var n=String(fileName||'').trim();
+    if(!/\.html?$/i.test(n)) n='html-viewer.html';
+    return n.replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_');
+  }
+  function saveDownload(file,name){
+    var url=URL.createObjectURL(file);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download=name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+    toast(name+' を書き出しました');
+  }
+  function exportHtml(){
+    var t=src.value;
+    if(!t||!String(t).trim()){
+      toast('書き出すHTMLがありません');
+      return;
+    }
+    var name=exportName();
+    var file=new File([t],name,{type:'text/html'});
+    var iOS=/iPad|iPhone|iPod/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    if(iOS&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:name}).then(function(){
+        toast('書き出しました');
+      }).catch(function(err){
+        if(err&&err.name==='AbortError') return;
+        saveDownload(file,name);
+      });
+      return;
+    }
+    saveDownload(file,name);
   }
   var liveTimer=null;
   function liveFromSource(){
@@ -278,6 +396,7 @@ body.dragging .empty-hit{
       var t=src.value;
       if(!t || !t.trim()) return;
       applyView(t, fileName||'ソース', true);
+      noteTyping();
     }, 280);
   }
   function readFile(f){
@@ -319,7 +438,9 @@ body.dragging .empty-hit{
   }
   document.getElementById('paste').onclick=fromClipboard;
   document.getElementById('paste2').onclick=fromClipboard;
+  document.getElementById('undoBtn').onclick=undo;
   document.getElementById('clearBtn').onclick=clearAll;
+  document.getElementById('exportBtn').onclick=exportHtml;
   document.getElementById('fsBtn').onclick=enterFS;
   document.getElementById('exitFs').onclick=exitFS;
   src.addEventListener('input', liveFromSource);
@@ -335,7 +456,12 @@ body.dragging .empty-hit{
   });
   document.addEventListener('paste', function(e){
     if(e.target===src){
-      setTimeout(function(){ applyView(src.value, '貼り付け', true); toast('貼り付けました'); }, 0);
+      rememberCurrent();
+      setTimeout(function(){
+        applyView(src.value, fileName, true);
+        pushSnap(currentSnap());
+        toast('貼り付けました');
+      }, 0);
       return;
     }
     var t=clipText(e);
@@ -346,6 +472,16 @@ body.dragging .empty-hit{
   });
   document.addEventListener('keydown', function(e){
     if(e.key==='Escape') exitFS();
+    var meta=e.metaKey||e.ctrlKey;
+    if(meta&&(e.key==='z'||e.key==='Z')&&!e.shiftKey){
+      if(e.target===src) return;
+      e.preventDefault();
+      undo();
+    }
+    if(meta&&(e.key==='s'||e.key==='S')){
+      e.preventDefault();
+      exportHtml();
+    }
   });
   function hasFiles(e){
     var dt=e.dataTransfer;
@@ -383,6 +519,7 @@ body.dragging .empty-hit{
     if(f) readFile(f);
   });
   empty.style.display='flex';
+  updateUndo();
 })();
 </script>
 </body>
