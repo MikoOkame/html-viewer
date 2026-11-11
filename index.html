@@ -135,6 +135,7 @@ body.dragging .empty-hit{
   <button type="button" id="paste">貼る</button>
   <button type="button" id="srcBtn">ソース</button>
   <button type="button" id="undoBtn" disabled>Undo</button>
+  <button type="button" id="redoBtn" disabled>Redo</button>
   <button type="button" id="exportBtn" disabled aria-label="HTMLを書き出す">書き出し</button>
 </header>
 <input id="file" class="filepick" type="file" accept=".html,.htm,.txt,text/html,text/plain" tabindex="-1" aria-hidden="true">
@@ -249,6 +250,7 @@ body.dragging .empty-hit{
   }
   function updateUndo(){
     document.getElementById('undoBtn').disabled=histAt<=0;
+    document.getElementById('redoBtn').disabled=histAt>=history.length-1;
     document.getElementById('exportBtn').disabled=!hasContent;
   }
   function pushSnap(snap){
@@ -331,6 +333,19 @@ body.dragging .empty-hit{
     paint(snap.text,fileName,true);
     updateUndo();
     toast('Undo');
+  }
+  function redo(){
+    rememberCurrent();
+    if(histAt>=history.length-1){
+      toast('進める状態がありません');
+      return;
+    }
+    histAt++;
+    var snap=history[histAt];
+    fileName=snap.name||DEFAULT_NAME;
+    paint(snap.text,fileName,true);
+    updateUndo();
+    toast('Redo');
   }
   function exportName(){
     var n=String(fileName||'').trim();
@@ -420,6 +435,7 @@ body.dragging .empty-hit{
     document.getElementById('file').click();
   };
   document.getElementById('undoBtn').onclick=undo;
+  document.getElementById('redoBtn').onclick=redo;
   document.getElementById('clearBtn').onclick=clearAll;
   document.getElementById('exportBtn').onclick=exportHtml;
   var fsBtn=document.getElementById('fsBtn');
@@ -460,6 +476,11 @@ body.dragging .empty-hit{
       if(e.target===src) return;
       e.preventDefault();
       undo();
+    }
+    if(meta&&(((e.key==='z'||e.key==='Z')&&e.shiftKey)||e.key==='y'||e.key==='Y')){
+      if(e.target===src) return;
+      e.preventDefault();
+      redo();
     }
     if(meta&&(e.key==='s'||e.key==='S')){
       e.preventDefault();
