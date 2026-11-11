@@ -62,7 +62,9 @@ button.ghost{background:transparent;color:var(--muted)}
 button:active,.filebtn:active{filter:brightness(1.12)}
 button:disabled{opacity:.35}
 button:disabled:active{filter:none}
-.filebtn input{display:none}
+.filepick{
+  position:fixed;left:-999px;width:1px;height:1px;opacity:0;
+}
 .icon{width:14px;height:14px;display:block;flex:none}
 #undoBtn,#clearBtn{
   min-width:36px;padding:0 8px;background:transparent;color:#c5ced8;font-weight:600;
@@ -142,8 +144,7 @@ body.dragging .empty-hit{
     <button type="button" id="undoBtn" disabled>Undo</button>
     <button type="button" id="clearBtn" aria-label="消す">消す</button>
     <span class="spacer"></span>
-    <button type="button" class="primary" id="paste">貼る</button>
-    <label class="filebtn"><input id="file" type="file" accept=".html,.htm,.txt,text/html,text/plain"><span>ファイル</span></label>
+    <button type="button" id="paste">貼る</button>
     <button type="button" class="ghost" id="srcBtn">ソース</button>
     <button type="button" id="exportBtn" disabled aria-label="HTMLを書き出す">書き出し</button>
     <button type="button" id="fsBtn" aria-label="全画面">
@@ -154,13 +155,14 @@ body.dragging .empty-hit{
   <b id="name">HTML Viewer</b>
 </header>
 <button type="button" id="exitFs">戻る</button>
+<input id="file" class="filepick" type="file" accept=".html,.htm,.txt,text/html,text/plain" tabindex="-1" aria-hidden="true">
 <div class="stage" id="stage">
   <iframe id="frame" title="view" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
   <div class="empty" id="empty">
     <div class="brand">HTML Viewer</div>
-    <button type="button" class="empty-hit" id="paste2" aria-label="Paste or drop">
+    <button type="button" class="empty-hit" id="paste2" aria-label="Select or Drop">
       <img src="bird.png" alt="">
-      <span>Paste or drop</span>
+      <span>Select or Drop</span>
     </button>
   </div>
 </div>
@@ -432,7 +434,9 @@ body.dragging .empty-hit{
     return d.getData('text/plain') || d.getData('text/html') || '';
   }
   document.getElementById('paste').onclick=fromClipboard;
-  document.getElementById('paste2').onclick=fromClipboard;
+  document.getElementById('paste2').onclick=function(){
+    document.getElementById('file').click();
+  };
   document.getElementById('undoBtn').onclick=undo;
   document.getElementById('clearBtn').onclick=clearAll;
   document.getElementById('exportBtn').onclick=exportHtml;
