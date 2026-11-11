@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>HTMLビュー</title>
+<title>HTML Viewer</title>
 <meta name="description" content="貼って見る。ソースを直すとすぐ反映。">
 <meta name="theme-color" content="#151c25">
 <style>
@@ -111,7 +111,7 @@ body.dragging .empty-hit{
 <body>
 <header class="bar">
   <button type="button" id="clearBtn" aria-label="消す">消す</button>
-  <b id="name">HTMLビュー</b>
+  <b id="name">HTML Viewer</b>
   <button type="button" class="primary" id="paste">貼る</button>
   <label class="filebtn"><input id="file" type="file" accept=".html,.htm,.txt,text/html,text/plain"><span>ファイル</span></label>
   <button type="button" class="ghost" id="srcBtn">ソース</button>
@@ -124,7 +124,7 @@ body.dragging .empty-hit{
 <div class="stage" id="stage">
   <iframe id="frame" title="view" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
   <div class="empty" id="empty">
-    <div class="brand">HTMLビュー</div>
+    <div class="brand">HTML Viewer</div>
     <button type="button" class="empty-hit" id="paste2" aria-label="貼る">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <rect x="6" y="7" width="12" height="14" rx="2"/>
@@ -151,7 +151,7 @@ body.dragging .empty-hit{
   var nameEl=document.getElementById('name');
   var toastEl=document.getElementById('toast');
   var toastTimer=null;
-  var fileName='HTMLビュー';
+  var fileName='HTML Viewer';
   var lastUrl='';
   var hasContent=false;
   function toast(msg){
@@ -225,7 +225,7 @@ body.dragging .empty-hit{
   }
   function clearAll(){
     src.value='';
-    fileName='HTMLビュー';
+    fileName='HTML Viewer';
     nameEl.textContent=fileName;
     hasContent=false;
     newFrame();
